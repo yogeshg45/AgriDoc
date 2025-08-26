@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Prediction - Smart Farming Assistant</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .prediction-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            margin-bottom: 30px;
+        }
+
+        .upload-section {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px dashed #43cea2;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #185a9d;
+            background: linear-gradient(135deg, #f0f8ff 0%, #e0f2ff 100%);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-btn {
+            background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(67, 206, 162, 0.3);
+        }
+
+        .manual-input-section {
+            border-top: 2px solid #e0e0e0;
+            padding-top: 30px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #43cea2;
+            font-size: 1rem;
+            z-index: 1;
+        }
+
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            outline: none;
+            background: white;
+        }
+
+        input:focus, select:focus {
+            border-color: #43cea2;
+            box-shadow: 0 0 0 3px rgba(67, 206, 162, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(67, 206, 162, 0.3);
+        }
+
+        .error {
+            background: #ffe6e6;
+            color: #d32f2f;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #d32f2f;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+
+        .results-section {
+            margin-top: 30px;
+        }
+
+        .result-item {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid #43cea2;
+        }
+
+        .input-summary {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .input-item {
+            text-align: center;
+        }
+
+        .input-label {
+            font-size: 0.85rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .input-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .nutrient-analysis {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .nutrient-card {
+            background: #f0f8ff;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #43cea2;
+        }
+
+        .nutrient-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .nutrient-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-sufficient { background: #e8f5e8; color: #2e7d2e; }
+        .status-low { background: #fff3e0; color: #f57c00; }
+        .status-very-low { background: #ffebee; color: #d32f2f; }
+
+        .nutrient-details {
+            margin-bottom: 15px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .fertilizer-recommendation {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .health-indicator {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .health-excellent { background: #e8f5e8; color: #2e7d2e; }
+        .health-good { background: #e3f2fd; color: #1976d2; }
+        .health-fair { background: #fff3e0; color: #f57c00; }
+        .health-poor { background: #ffebee; color: #d32f2f; }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .prediction-card {
+                padding: 25px;
+                margin: 0 10px;
+            }
+            
+            .nutrient-analysis {
+                grid-template-columns: 1fr;
+            }
+            
+            .input-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-seedling"></i> Nutrient-based Prediction</h1>
+            <p>Predict optimal fertilizer recommendations based on soil conditions</p>
+        </div>
+
+        <div class="prediction-card">
+            <!-- File Upload Section -->
+            <form method="POST" enctype="multipart/form-data" id="fileForm">
+                <div class="upload-section">
+                    <div class="file-input-wrapper">
+                        <input type="file" class="file-input" accept=".csv" name="file" id="csvFile">
+                        <div class="file-input-btn">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            Upload CSV File
+                        </div>
+                    </div>
+                    <p style="color: #666; margin-top: 10px;">
+                        <i class="fas fa-info-circle"></i> 
+                        Upload a CSV file with soil and environmental data for batch predictions
+                    </p>
+                    <button type="submit" class="btn-primary" style="margin-top: 15px; max-width: 200px;">
+                        <i class="fas fa-upload"></i>
+                        Process File
+                    </button>
+                </div>
+            </form>
+
+            <!-- Manual Input Section -->
+            <div class="manual-input-section">
+                <h3 style="margin-bottom: 20px; color: #333;">
+                    <i class="fas fa-edit"></i> OR Enter Data Manually:
+                </h3>
+                
+                <form method="POST" id="manualForm">
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label for="Nitrogen">Nitrogen (ppm):</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-flask"></i>
+                                <input type="number" step="0.01" name="Nitrogen" id="Nitrogen" placeholder="Enter nitrogen content">
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="Phosphorus">Phosphorus (ppm):</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-flask"></i>
+                                <input type="number" step="0.01" name="Phosphorus" id="Phosphorus" placeholder="Enter phosphorus content">
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="Potassium">Potassium (ppm):</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-flask"></i>
+                                <input type="number" step="0.01" name="Potassium" id="Potassium" placeholder="Enter potassium content">
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="Temperature">Temperature (°C):</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-thermometer-half"></i>
+                                <input type="number" step="0.01" name="Temperature" id="Temperature" placeholder="Enter temperature">
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="Humidity">Humidity (%):</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-tint"></i>
+                                <input type="number" step="0.01" name="Humidity" id="Humidity" placeholder="Enter humidity">
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="pH_Value">pH Value:</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-vial"></i>
+                                <input type="number" step="0.01" name="pH_Value" id="pH_Value" placeholder="Enter pH value">
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="Rainfall">Rainfall (mm):</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-cloud-rain"></i>
+                                <input type="number" step="0.01" name="Rainfall" id="Rainfall" placeholder="Enter rainfall">
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="Crop">Crop:</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-leaf"></i>
+                                <select name="Crop" id="Crop">
+                                    <option value="">Select Crop</option>
+                                    {% for crop in crop_options %}
+                                    <option value="{{ crop }}">{{ crop }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="Soil_Type">Soil Type:</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-mountain"></i>
+                                <select name="Soil_Type" id="Soil_Type">
+                                    <option value="">Select Soil Type</option>
+                                    {% for soil in soil_type_options %}
+                                    <option value="{{ soil }}">{{ soil }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="Variety">Variety:</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-seedling"></i>
+                                <select name="Variety" id="Variety">
+                                    <option value="">Select Variety</option>
+                                    {% for variety in variety_options %}
+                                    <option value="{{ variety }}">{{ variety }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-magic"></i>
+                        Generate Prediction
+                    </button>
+                </form>
+            </div>
+
+            {% if error %}
+            <div class="error">
+                <i class="fas fa-exclamation-triangle"></i> {{ error }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Results Section -->
+        {% if results %}
+        <div class="results-section">
+            <h2 style="color: white; text-align: center; margin-bottom: 30px;">
+                <i class="fas fa-chart-line"></i> Prediction Results
+            </h2>
+            
+            {% for result in results %}
+            <div class="result-item">
+                <div class="input-summary">
+                    <h3 style="margin-bottom: 15px; color: #333;">
+                        <i class="fas fa-info-circle"></i> Input Parameters
+                    </h3>
+                    <div class="input-grid">
+                        <div class="input-item">
+                            <div class="input-label">Crop</div>
+                            <div class="input-value">{{ result.input_data.crop }}</div>
+                        </div>
+                        <div class="input-item">
+                            <div class="input-label">Soil Type</div>
+                            <div class="input-value">{{ result.input_data.soil_type }}</div>
+                        </div>
+                        <div class="input-item">
+                            <div class="input-label">Temperature</div>
+                            <div class="input-value">{{ "%.1f"|format(result.input_data.temperature) }}°C</div>
+                        </div>
+                        <div class="input-item">
+                            <div class="input-label">Humidity</div>
+                            <div class="input-value">{{ "%.1f"|format(result.input_data.humidity) }}%</div>
+                        </div>
+                        <div class="input-item">
+                            <div class="input-label">pH</div>
+                            <div class="input-value">{{ "%.2f"|format(result.input_data.ph) }}</div>
+                        </div>
+                        <div class="input-item">
+                            <div class="input-label">Rainfall</div>
+                            <div class="input-value">{{ "%.1f"|format(result.input_data.rainfall) }}mm</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="health-indicator health-{{ result.recommendation.overall_health.lower() }}">
+                    <h3><i class="fas fa-heart"></i> Overall Soil Health: {{ result.recommendation.overall_health }}</h3>
+                </div>
+
+                <div class="nutrient-analysis">
+                    <!-- Nitrogen Analysis -->
+                    <div class="nutrient-card">
+                        <div class="nutrient-header">
+                            <div class="nutrient-title">🟢 Nitrogen</div>
+                            <span class="status-badge status-{{ result.recommendation.nitrogen.status.lower().replace(' ', '-') }}">
+                                {{ result.recommendation.nitrogen.status }}
+                            </span>
+                        </div>
+                        <div class="nutrient-details">
+                            <div class="detail-row">
+                                <span>Present:</span>
+                                <span><strong>{{ "%.2f"|format(result.recommendation.nitrogen.present) }} ppm</strong></span>
+                            </div>
+                            <div class="detail-row">
+                                <span>Deficit:</span>
+                                <span><strong>{{ "%.2f"|format(result.recommendation.nitrogen.deficit) }} kg/ha</strong></span>
+                            </div>
+                        </div>
+                        {% if result.recommendation.nitrogen.fertilizer_needed > 0.01 %}
+                        <div class="fertilizer-recommendation">
+                            <strong>Recommendation:</strong><br>
+                            Apply {{ "%.1f"|format(result.recommendation.nitrogen.fertilizer_needed) }} kg/ha of {{ result.recommendation.nitrogen.fertilizer_type }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Phosphorus Analysis -->
+                    <div class="nutrient-card">
+                        <div class="nutrient-header">
+                            <div class="nutrient-title">🔵 Phosphorus</div>
+                            <span class="status-badge status-{{ result.recommendation.phosphorus.status.lower().replace(' ', '-') }}">
+                                {{ result.recommendation.phosphorus.status }}
+                            </span>
+                        </div>
+                        <div class="nutrient-details">
+                            <div class="detail-row">
+                                <span>Present:</span>
+                                <span><strong>{{ "%.2f"|format(result.recommendation.phosphorus.present) }} ppm</strong></span>
+                            </div>
+                            <div class="detail-row">
+                                <span>Deficit:</span>
+                                <span><strong>{{ "%.2f"|format(result.recommendation.phosphorus.deficit) }} kg/ha</strong></span>
+                            </div>
+                        </div>
+                        {% if result.recommendation.phosphorus.fertilizer_needed > 0.01 %}
+                        <div class="fertilizer-recommendation">
+                            <strong>Recommendation:</strong><br>
+                            Apply {{ "%.1f"|format(result.recommendation.phosphorus.fertilizer_needed) }} kg/ha of {{ result.recommendation.phosphorus.fertilizer_type }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Potassium Analysis -->
+                    <div class="nutrient-card">
+                        <div class="nutrient-header">
+                            <div class="nutrient-title">🟡 Potassium</div>
+                            <span class="status-badge status-{{ result.recommendation.potassium.status.lower().replace(' ', '-') }}">
+                                {{ result.recommendation.potassium.status }}
+                            </span>
+                        </div>
+                        <div class="nutrient-details">
+                            <div class="detail-row">
+                                <span>Present:</span>
+                                <span><strong>{{ "%.2f"|format(result.recommendation.potassium.present) }} ppm</strong></span>
+                            </div>
+                            <div class="detail-row">
+                                <span>Deficit:</span>
+                                <span><strong>{{ "%.2f"|format(result.recommendation.potassium.deficit) }} kg/ha</strong></span>
+                            </div>
+                        </div>
+                        {% if result.recommendation.potassium.fertilizer_needed > 0.01 %}
+                        <div class="fertilizer-recommendation">
+                            <strong>Recommendation:</strong><br>
+                            Apply {{ "%.1f"|format(result.recommendation.potassium.fertilizer_needed) }} kg/ha of {{ result.recommendation.potassium.fertilizer_type }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if result.recommendation.priority_actions %}
+                <div style="margin-top: 20px; padding: 15px; background: #fff3e0; border-radius: 10px; border-left: 4px solid #f57c00;">
+                    <h4 style="color: #f57c00; margin-bottom: 10px;">
+                        <i class="fas fa-exclamation-triangle"></i> Priority Actions
+                    </h4>
+                    <ul style="margin-left: 20px;">
+                        {% for action in result.recommendation.priority_actions %}
+                        <li style="margin-bottom: 5px;">{{ action }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Handle file input display
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name || 'Upload CSV File';
+            const btn = document.querySelector('.file-input-btn');
+            if (e.target.files[0]) {
+                btn.innerHTML = `<i class="fas fa-file-csv"></i> ${fileName}`;
+            }
+        });
+    </script>
+</body>
+</html>

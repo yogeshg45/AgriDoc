@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Farm Assistant - Smart Farming Chatbot</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            text-align: center;
+            color: white;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .ai-status {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 5px 15px;
+            background: rgba(76, 175, 80, 0.2);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #4CAF50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .ai-status.offline {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border-color: rgba(244, 67, 54, 0.3);
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 900px;
+            margin: 20px auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            min-height: 500px;
+            max-height: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            display: flex;
+            gap: 15px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .bot-avatar {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        }
+
+        .user-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .message-content {
+            flex: 1;
+            max-width: 70%;
+        }
+
+        .message-bubble {
+            padding: 15px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+
+        .bot-message {
+            background: #f8f9ff;
+            border: 1px solid #e8f2ff;
+            color: #333;
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message-time {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        .user .message-time {
+            text-align: left;
+        }
+
+        .suggestions {
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+            background: #f8f9ff;
+        }
+
+        .suggestions h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .suggestion-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .suggestion-chip {
+            background: white;
+            border: 1px solid #667eea;
+            color: #667eea;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .suggestion-chip:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            min-height: 50px;
+            max-height: 120px;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: none;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .send-button {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .welcome-message .icon {
+            font-size: 4rem;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+
+        .welcome-message h2 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
+
+        .features-list {
+            list-style: none;
+            margin-top: 15px;
+            line-height: 1.8;
+            text-align: left;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .features-list li {
+            padding: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #d32f2f;
+            padding: 15px 20px;
+            border-radius: 10px;
+            border-left: 4px solid #d32f2f;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .success-message {
+            background: #e8f5e8;
+            color: #2e7d2e;
+            padding: 15px 20px;
+            border-radius: 10px;
+            border-left: 4px solid #4CAF50;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .typing-indicator {
+            display: none;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            padding: 10px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: typingDot 1.4s infinite ease-in-out both;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        .typing-dot:nth-child(3) { animation-delay: 0s; }
+
+        .language-toggle {
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .lang-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 5px 15px;
+            border-radius: 15px;
+            margin: 0 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .lang-btn.active,
+        .lang-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes typingDot {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .pulse { animation: pulse 2s infinite; }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .message-content {
+                max-width: 85%;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .chat-messages {
+                padding: 20px;
+                min-height: 400px;
+            }
+            
+            .suggestion-chips {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-robot"></i> AI Farm Assistant</h1>
+        <p>Get expert agricultural advice powered by Google Gemini AI</p>
+        <div class="language-toggle">
+            <button class="lang-btn active" data-lang="en">English</button>
+            <button class="lang-btn" data-lang="hi">हिंदी</button>
+        </div>
+        <div class="ai-status" id="aiStatus">
+            <i class="fas fa-circle pulse"></i> Connecting to AI...
+        </div>
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <div class="icon">
+                    <i class="fas fa-seedling"></i>
+                </div>
+                <h2>Welcome to AI Farm Assistant! 🌱</h2>
+                <p>Namaste! I'm Dr. AgriBot, your personal farming advisor powered by Google Gemini AI. 
+                   I can help you with farming questions in both English and Hindi.</p>
+                <ul class="features-list">
+                    <li><span>🌾</span> Crop management and selection</li>
+                    <li><span>💧</span> Fertilizer recommendations</li>
+                    <li><span>🌤️</span> Weather-based farming decisions</li>
+                    <li><span>🐛</span> Pest and disease control</li>
+                    <li><span>🌱</span> Soil health improvement</li>
+                    <li><span>💰</span> Cost-effective solutions for Indian farmers</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="suggestions" id="suggestionsContainer">
+            <h3><i class="fas fa-lightbulb"></i> Try asking (कुछ सवाल करें):</h3>
+            <div class="suggestion-chips" id="suggestionChips">
+                <!-- Suggestions will be loaded here -->
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <div class="chat-input-wrapper">
+                <textarea 
+                    class="chat-input" 
+                    id="chatInput" 
+                    placeholder="Ask me anything about farming... (किसानी के बारे में कुछ भी पूछें...)" 
+                    rows="1"
+                ></textarea>
+                <button class="send-button" id="sendButton">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SmartFarmingChatBot {
+            constructor() {
+                this.chatMessages = document.getElementById('chatMessages');
+                this.chatInput = document.getElementById('chatInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.suggestionChips = document.getElementById('suggestionChips');
+                this.suggestionsContainer = document.getElementById('suggestionsContainer');
+                this.aiStatus = document.getElementById('aiStatus');
+                this.userId = this.generateUserId();
+                this.currentLanguage = 'en';
+                
+                this.init();
+            }
+
+            init() {
+                this.checkAIStatus();
+                this.loadSuggestions();
+                this.bindEvents();
+                this.autoResizeTextarea();
+            }
+
+            generateUserId() {
+                return 'farmer_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            bindEvents() {
+                // Send message events
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                this.chatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+
+                // Auto-resize textarea
+                this.chatInput.addEventListener('input', () => {
+                    this.autoResizeTextarea();
+                });
+
+                // Language toggle
+                document.querySelectorAll('.lang-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentLanguage = e.target.dataset.lang;
+                        this.updatePlaceholder();
+                    });
+                });
+            }
+
+            updatePlaceholder() {
+                const placeholders = {
+                    'en': 'Ask me anything about farming...',
+                    'hi': 'किसानी के बारे में कुछ भी पूछें...'
+                };
+                this.chatInput.placeholder = placeholders[this.currentLanguage] || placeholders['en'];
+            }
+
+            async checkAIStatus() {
+                try {
+                    const response = await fetch('/api/chatbot/health');
+                    const data = await response.json();
+                    
+                    if (data.status === 'healthy') {
+                        this.aiStatus.innerHTML = '<i class="fas fa-circle" style="color: #4CAF50;"></i> AI Ready - Powered by Gemini';
+                        this.aiStatus.className = 'ai-status';
+                    } else {
+                        this.aiStatus.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ff9800;"></i> AI Service Degraded';
+                        this.aiStatus.className = 'ai-status offline';
+                    }
+                } catch (error) {
+                    this.aiStatus.innerHTML = '<i class="fas fa-times-circle" style="color: #f44336;"></i> AI Offline';
+                    this.aiStatus.className = 'ai-status offline';
+                }
+            }
+
+            autoResizeTextarea() {
+                this.chatInput.style.height = 'auto';
+                this.chatInput.style.height = Math.min(this.chatInput.scrollHeight, 120) + 'px';
+            }
+
+            async loadSuggestions() {
+                try {
+                    const response = await fetch('/api/chatbot/suggestions');
+                    const data = await response.json();
+                    
+                    this.suggestionChips.innerHTML = '';
+                    
+                    // Mix of English and Hindi suggestions
+                    const mixedSuggestions = data.suggestions.slice(0, 8);
+                    
+                    mixedSuggestions.forEach(suggestion => {
+                        const chip = document.createElement('div');
+                        chip.className = 'suggestion-chip';
+                        chip.textContent = suggestion;
+                        chip.addEventListener('click', () => {
+                            this.chatInput.value = suggestion;
+                            this.sendMessage();
+                        });
+                        this.suggestionChips.appendChild(chip);
+                    });
+                } catch (error) {
+                    console.error('Error loading suggestions:', error);
+                    // Fallback suggestions
+                    const fallbackSuggestions = [
+                        "What fertilizer for tomatoes?",
+                        "मिट्टी कैसे सुधारें?",
+                        "Best time to plant rice?",
+                        "पानी की कमी में क्या करें?"
+                    ];
+                    
+                    fallbackSuggestions.forEach(suggestion => {
+                        const chip = document.createElement('div');
+                        chip.className = 'suggestion-chip';
+                        chip.textContent = suggestion;
+                        chip.addEventListener('click', () => {
+                            this.chatInput.value = suggestion;
+                            this.sendMessage();
+                        });
+                        this.suggestionChips.appendChild(chip);
+                    });
+                }
+            }
+
+            async sendMessage() {
+                const message = this.chatInput.value.trim();
+                if (!message || this.sendButton.disabled) return;
+
+                // Hide welcome message and suggestions after first message
+                const welcomeMessage = this.chatMessages.querySelector('.welcome-message');
+                if (welcomeMessage) {
+                    welcomeMessage.style.display = 'none';
+                    this.suggestionsContainer.style.display = 'none';
+                }
+
+                // Add user message
+                this.addMessage(message, 'user');
+                this.chatInput.value = '';
+                this.autoResizeTextarea();
+
+                // Disable input while processing
+                this.setLoading(true);
+
+                try {
+                    const response = await fetch('/api/chatbot', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            user_id: this.userId,
+                            language: this.currentLanguage
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.error) {
+                        this.addErrorMessage(data.error);
+                    } else {
+                        this.addMessage(data.reply, 'bot');
+                        this.addSuccessMessage('✨ Powered by Google Gemini AI');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.addErrorMessage('Sorry, I\'m having trouble connecting to the AI service. Please try again.');
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+
+            addMessage(text, type) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}`;
+
+                const avatar = document.createElement('div');
+                avatar.className = `message-avatar ${type}-avatar`;
+                if (type === 'bot') {
+                    avatar.innerHTML = '<i class="fas fa-robot"></i>';
+                } else {
+                    avatar.innerHTML = '<i class="fas fa-user-farmer"></i>';
+                }
+
+                const content = document.createElement('div');
+                content.className = 'message-content';
+
+                const bubble = document.createElement('div');
+                bubble.className = `message-bubble ${type}-message`;
+                bubble.innerHTML = this.formatMessage(text);
+
+                const time = document.createElement('div');
+                time.className = 'message-time';
+                time.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                content.appendChild(bubble);
+                content.appendChild(time);
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(content);
+
+                this.chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+
+            addErrorMessage(error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${error}`;
+                this.chatMessages.appendChild(errorDiv);
+                this.scrollToBottom();
+            }
+
+            addSuccessMessage(message) {
+                const successDiv = document.createElement('div');
+                successDiv.className = 'success-message';
+                successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+                this.chatMessages.appendChild(successDiv);
+                
+                // Auto-remove success message after 3 seconds
+                setTimeout(() => {
+                    if (successDiv.parentNode) {
+                        successDiv.remove();
+                    }
+                }, 3000);
+                
+                this.scrollToBottom();
+            }
+
+            formatMessage(text) {
+                // Convert line breaks to <br> tags
+                text = text.replace(/\n/g, '<br>');
+                
+                // Convert **bold** to <strong>
+                text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                
+                // Convert *italic* to <em>
+                text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                
+                // Convert bullet points to proper list items
+                text = text.replace(/^- (.+)$/gm, '• $1');
+                
+                return text;
+            }
+
+            setLoading(loading) {
+                this.sendButton.disabled = loading;
+                this.chatInput.disabled = loading;
+                
+                if (loading) {
+                    this.sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    this.showTypingIndicator();
+                } else {
+                    this.sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                    this.hideTypingIndicator();
+                }
+            }
+
+            showTypingIndicator() {
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'message bot typing-indicator';
+                typingDiv.id = 'typingIndicator';
+                
+                const avatar = document.createElement('div');
+                avatar.className = 'message-avatar bot-avatar';
+                avatar.innerHTML = '<i class="fas fa-robot"></i>';
+                
+                const content = document.createElement('div');
+                content.className = 'message-content';
+                content.innerHTML = `
+                    <div class="message-bubble bot-message">
+                        <div class="typing-dots">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                        <div style="margin-top: 8px; font-size: 0.8rem; opacity: 0.7;">
+                            Dr. AgriBot is thinking...
+                        </div>
+                    </div>
+                `;
+                
+                typingDiv.appendChild(avatar);
+                typingDiv.appendChild(content);
+                this.chatMessages.appendChild(typingDiv);
+                this.scrollToBottom();
+            }
+
+            hideTypingIndicator() {
+                const typingIndicator = document.getElementById('typingIndicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+            }
+
+            scrollToBottom() {
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+        }
+
+        // Initialize the chatbot when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new SmartFarmingChatBot();
+        });
+
+        // Add some fun farming emojis to the title
+        document.title = "🌾 AI Farm Assistant - Smart Farming Chatbot 🤖";
+    </script>
+</body>
+</html>

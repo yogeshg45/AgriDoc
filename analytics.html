@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farm Analytics Dashboard - Smart Farming Assistant</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .analytics-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .upload-section {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 40px;
+            border: 2px dashed #667eea;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #764ba2;
+            background: linear-gradient(135deg, #f0f8ff 0%, #e0f2ff 100%);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .analyze-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #c33;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .success-message {
+            background: #e8f5e8;
+            color: #2e7d2e;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .analytics-dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .chart-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border: 1px solid #e9ecef;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .chart-title {
+            color: #333;
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-toggle {
+            display: flex;
+            gap: 5px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 3px;
+        }
+
+        .chart-toggle-btn {
+            background: transparent;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .chart-toggle-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        .stats-section {
+            grid-column: span 2;
+            margin-top: 20px;
+        }
+
+        .stats-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px 15px 0 0;
+            margin-bottom: 0;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 0 0 15px 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .stats-table th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .stats-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            color: #555;
+        }
+
+        .stats-table tbody tr:hover {
+            background: #f8f9ff;
+        }
+
+        .nutrient-name {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .deficit-value {
+            font-weight: 600;
+        }
+
+        .deficit-high {
+            color: #e74c3c;
+        }
+
+        .deficit-medium {
+            color: #f39c12;
+        }
+
+        .deficit-low {
+            color: #27ae60;
+        }
+
+        .insights-section {
+            grid-column: span 2;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .insights-header {
+            color: #333;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .insight-card {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .insight-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .insight-nutrient {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .insight-message {
+            color: #555;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 1024px) {
+            .analytics-dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-section {
+                grid-column: span 1;
+            }
+            
+            .insights-section {
+                grid-column: span 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .analytics-container {
+                padding: 25px;
+                margin: 0 10px;
+            }
+            
+            .chart-section {
+                padding: 20px;
+            }
+            
+            .chart-container {
+                height: 300px;
+            }
+            
+            .stats-table {
+                font-size: 0.9rem;
+            }
+            
+            .stats-table th,
+            .stats-table td {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> Farm Analytics Dashboard</h1>
+            <p>Analyze your soil data with advanced visualizations and insights</p>
+        </div>
+
+        <div class="analytics-container">
+            <div class="upload-section">
+                <h3 style="margin-bottom: 20px; color: #333;">
+                    <i class="fas fa-database"></i> Upload Data for Analytics
+                </h3>
+                
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="file-input-wrapper">
+                        <input type="file" class="file-input" name="file" accept=".csv" required>
+                        <div class="file-input-btn">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            Choose CSV File
+                        </div>
+                    </div>
+                    <br>
+                    <button type="submit" class="analyze-btn">
+                        <i class="fas fa-microscope"></i>
+                        Analyze Data
+                    </button>
+                </form>
+                
+                <p style="color: #666; margin-top: 15px;">
+                    <i class="fas fa-info-circle"></i> 
+                    Upload a CSV file containing soil nutrient data (N_deficit_kg_ha, P_deficit_kg_ha, K_deficit_kg_ha columns required)
+                </p>
+            </div>
+
+            {% if error %}
+            <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                {{ error }}
+            </div>
+            {% endif %}
+
+            {% if stats %}
+            <div class="success-message">
+                <i class="fas fa-check-circle"></i>
+                Analysis completed! Found data for {{ total_samples }} field samples.
+            </div>
+
+            <div class="analytics-dashboard">
+                <!-- Bar Chart Section -->
+                <div class="chart-section">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fas fa-chart-bar"></i>
+                            Nutrient Deficit Overview
+                        </h3>
+                        <div class="chart-toggle">
+                            <button class="chart-toggle-btn active" onclick="changeChartType('bar', 'deficitChart')">
+                                <i class="fas fa-chart-bar"></i> Bar
+                            </button>
+                            <button class="chart-toggle-btn" onclick="changeChartType('line', 'deficitChart')">
+                                <i class="fas fa-chart-line"></i> Line
+                            </button>
+                            <button class="chart-toggle-btn" onclick="changeChartType('doughnut', 'deficitChart')">
+                                <i class="fas fa-chart-pie"></i> Pie
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="deficitChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Range Chart Section -->
+                <div class="chart-section">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fas fa-arrows-alt-v"></i>
+                            Min-Max Range Analysis
+                        </h3>
+                        <div class="chart-toggle">
+                            <button class="chart-toggle-btn active" onclick="changeChartType('bar', 'rangeChart')">
+                                <i class="fas fa-chart-bar"></i> Bar
+                            </button>
+                            <button class="chart-toggle-btn" onclick="changeChartType('line', 'rangeChart')">
+                                <i class="fas fa-chart-line"></i> Line
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="rangeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Insights Section -->
+                {% if insights %}
+                <div class="insights-section">
+                    <h3 class="insights-header">
+                        <i class="fas fa-lightbulb"></i>
+                        AI-Powered Insights & Recommendations
+                    </h3>
+                    {% for insight in insights %}
+                    <div class="insight-card">
+                        <div class="insight-nutrient">
+                            {{ insight.icon }} {{ insight.nutrient }} - {{ insight.severity }} Priority
+                        </div>
+                        <div class="insight-message">
+                            <strong>Finding:</strong> {{ insight.message }}<br>
+                            <strong>Recommendation:</strong> {{ insight.recommendation }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Statistics Table -->
+                <div class="stats-section">
+                    <div class="stats-header">
+                        <h3><i class="fas fa-table"></i> Detailed Statistics</h3>
+                        <p style="margin-top: 8px; opacity: 0.9;">Comprehensive numerical analysis of nutrient deficits</p>
+                    </div>
+                    
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-flask"></i> Nutrient</th>
+                                <th><i class="fas fa-chart-line"></i> Mean (kg/ha)</th>
+                                <th><i class="fas fa-arrow-down"></i> Min (kg/ha)</th>
+                                <th><i class="fas fa-arrow-up"></i> Max (kg/ha)</th>
+                                <th><i class="fas fa-wave-square"></i> Std Dev</th>
+                                <th><i class="fas fa-list-ol"></i> Samples</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for nutrient, vals in stats.items() %}
+                            <tr>
+                                <td class="nutrient-name">{{ nutrient }}</td>
+                                <td class="deficit-value {% if vals.mean > 50 %}deficit-high{% elif vals.mean > 20 %}deficit-medium{% else %}deficit-low{% endif %}">
+                                    {{ "%.2f"|format(vals.mean) }}
+                                </td>
+                                <td class="deficit-value">{{ "%.2f"|format(vals.min) }}</td>
+                                <td class="deficit-value {% if vals.max > 80 %}deficit-high{% elif vals.max > 40 %}deficit-medium{% else %}deficit-low{% endif %}">
+                                    {{ "%.2f"|format(vals.max) }}
+                                </td>
+                                <td class="deficit-value">{{ "%.2f"|format(vals.std) }}</td>
+                                <td class="deficit-value">{{ vals.count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <script>
+                // Chart instances
+                let deficitChart = null;
+                let rangeChart = null;
+
+                // Chart data
+                const chartData = {
+                    nutrients: [{% for nutrient in stats.keys() %}'{{ nutrient }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+                    meanValues: [{% for vals in stats.values() %}{{ vals.mean }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                    minValues: [{% for vals in stats.values() %}{{ vals.min }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                    maxValues: [{% for vals in stats.values() %}{{ vals.max }}{% if not loop.last %}, {% endif %}{% endfor %}]
+                };
+
+                // Initialize charts when DOM is loaded
+                document.addEventListener('DOMContentLoaded', function() {
+                    initializeCharts();
+                });
+
+                function initializeCharts() {
+                    // Deficit Overview Chart
+                    const deficitCtx = document.getElementById('deficitChart').getContext('2d');
+                    deficitChart = new Chart(deficitCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: chartData.nutrients,
+                            datasets: [{
+                                label: 'Mean Deficit (kg/ha)',
+                                data: chartData.meanValues,
+                                backgroundColor: [
+                                    'rgba(231, 76, 60, 0.6)',   // Red for high deficits
+                                    'rgba(230, 126, 34, 0.6)',  // Orange
+                                    'rgba(39, 174, 96, 0.6)'    // Green for lower deficits
+                                ],
+                                borderColor: [
+                                    'rgba(231, 76, 60, 1)',
+                                    'rgba(230, 126, 34, 1)',
+                                    'rgba(39, 174, 96, 1)'
+                                ],
+                                borderWidth: 2,
+                                borderRadius: 8,
+                                borderSkipped: false,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top',
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleColor: '#fff',
+                                    bodyColor: '#fff',
+                                    borderColor: '#667eea',
+                                    borderWidth: 1,
+                                    cornerRadius: 8,
+                                    callbacks: {
+                                        label: function(context) {
+                                            return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} kg/ha`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.1)',
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Deficit (kg/ha)',
+                                        font: {
+                                            size: 12,
+                                            weight: 'bold'
+                                        }
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false,
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Nutrients',
+                                        font: {
+                                            size: 12,
+                                            weight: 'bold'
+                                        }
+                                    }
+                                }
+                            },
+                            animation: {
+                                duration: 1000,
+                                easing: 'easeOutQuart'
+                            }
+                        }
+                    });
+
+                    // Range Analysis Chart
+                    const rangeCtx = document.getElementById('rangeChart').getContext('2d');
+                    rangeChart = new Chart(rangeCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: chartData.nutrients,
+                            datasets: [
+                                {
+                                    label: 'Minimum Deficit (kg/ha)',
+                                    data: chartData.minValues,
+                                    backgroundColor: 'rgba(46, 204, 113, 0.6)',
+                                    borderColor: 'rgba(46, 204, 113, 1)',
+                                    borderWidth: 2,
+                                    borderRadius: 8,
+                                },
+                                {
+                                    label: 'Maximum Deficit (kg/ha)',
+                                    data: chartData.maxValues,
+                                    backgroundColor: 'rgba(231, 76, 60, 0.6)',
+                                    borderColor: 'rgba(231, 76, 60, 1)',
+                                    borderWidth: 2,
+                                    borderRadius: 8,
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top',
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleColor: '#fff',
+                                    bodyColor: '#fff',
+                                    borderColor: '#667eea',
+                                    borderWidth: 1,
+                                    cornerRadius: 8,
+                                    callbacks: {
+                                        label: function(context) {
+                                            return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} kg/ha`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.1)',
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Deficit Range (kg/ha)',
+                                        font: {
+                                            size: 12,
+                                            weight: 'bold'
+                                        }
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false,
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Nutrients',
+                                        font: {
+                                            size: 12,
+                                            weight: 'bold'
+                                        }
+                                    }
+                                }
+                            },
+                            animation: {
+                                duration: 1000,
+                                easing: 'easeOutQuart'
+                            }
+                        }
+                    });
+                }
+
+                function changeChartType(newType, chartId) {
+                    // Update button states
+                    const buttons = document.querySelectorAll(`#${chartId}`).length > 0 ? 
+                        document.querySelector(`#${chartId}`).closest('.chart-section').querySelectorAll('.chart-toggle-btn') :
+                        [];
+                    
+                    buttons.forEach(btn => btn.classList.remove('active'));
+                    event.target.classList.add('active');
+
+                    // Get the chart instance
+                    const chart = chartId === 'deficitChart' ? deficitChart : rangeChart;
+                    
+                    if (chart) {
+                        // Destroy and recreate chart with new type
+                        chart.destroy();
+                        
+                        const ctx = document.getElementById(chartId).getContext('2d');
+                        const chartConfig = getChartConfig(newType, chartId);
+                        
+                        if (chartId === 'deficitChart') {
+                            deficitChart = new Chart(ctx, chartConfig);
+                        } else {
+                            rangeChart = new Chart(ctx, chartConfig);
+                        }
+                    }
+                }
+
+                function getChartConfig(type, chartId) {
+                    const baseConfig = {
+                        type: type,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top',
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleColor: '#fff',
+                                    bodyColor: '#fff',
+                                    borderColor: '#667eea',
+                                    borderWidth: 1,
+                                    cornerRadius: 8,
+                                }
+                            },
+                            animation: {
+                                duration: 800,
+                                easing: 'easeOutQuart'
+                            }
+                        }
+                    };
+
+                    if (chartId === 'deficitChart') {
+                        baseConfig.data = {
+                            labels: chartData.nutrients,
+                            datasets: [{
+                                label: 'Mean Deficit (kg/ha)',
+                                data: chartData.meanValues,
+                                backgroundColor: type === 'doughnut' ? [
+                                    'rgba(231, 76, 60, 0.8)',
+                                    'rgba(230, 126, 34, 0.8)',
+                                    'rgba(39, 174, 96, 0.8)'
+                                ] : [
+                                    'rgba(231, 76, 60, 0.6)',
+                                    'rgba(230, 126, 34, 0.6)',
+                                    'rgba(39, 174, 96, 0.6)'
+                                ],
+                                borderColor: [
+                                    'rgba(231, 76, 60, 1)',
+                                    'rgba(230, 126, 34, 1)',
+                                    'rgba(39, 174, 96, 1)'
+                                ],
+                                borderWidth: 2,
+                                tension: type === 'line' ? 0.4 : 0,
+                                fill: type === 'line' ? false : true,
+                                borderRadius: type === 'bar' ? 8 : 0,
+                            }]
+                        };
+                    } else {
+                        baseConfig.data = {
+                            labels: chartData.nutrients,
+                            datasets: [
+                                {
+                                    label: 'Minimum Deficit (kg/ha)',
+                                    data: chartData.minValues,
+                                    backgroundColor: 'rgba(46, 204, 113, 0.6)',
+                                    borderColor: 'rgba(46, 204, 113, 1)',
+                                    borderWidth: 2,
+                                    tension: type === 'line' ? 0.4 : 0,
+                                    fill: false,
+                                    borderRadius: type === 'bar' ? 8 : 0,
+                                },
+                                {
+                                    label: 'Maximum Deficit (kg/ha)',
+                                    data: chartData.maxValues,
+                                    backgroundColor: 'rgba(231, 76, 60, 0.6)',
+                                    borderColor: 'rgba(231, 76, 60, 1)',
+                                    borderWidth: 2,
+                                    tension: type === 'line' ? 0.4 : 0,
+                                    fill: false,
+                                    borderRadius: type === 'bar' ? 8 : 0,
+                                }
+                            ]
+                        };
+                    }
+
+                    // Configure scales based on chart type
+                    if (type !== 'doughnut') {
+                        baseConfig.options.scales = {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)',
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Deficit (kg/ha)',
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false,
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Nutrients',
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    }
+                                }
+                            }
+                        };
+                    }
+
+                    return baseConfig;
+                }
+            </script>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

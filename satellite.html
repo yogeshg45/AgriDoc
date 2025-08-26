@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satellite Monitoring - Smart Farming Assistant</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .satellite-dashboard {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+            height: calc(100vh - 200px);
+        }
+
+        .map-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+        }
+
+        .map-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .location-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .location-input {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            outline: none;
+            min-width: 200px;
+        }
+
+        .location-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .location-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .preset-locations {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .preset-btn:hover,
+        .preset-btn.active {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .map-content {
+            height: calc(100% - 120px);
+            position: relative;
+        }
+
+        #satelliteMap {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: #2c3e50;
+            font-size: 1.2rem;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .controls-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            overflow-y: auto;
+        }
+
+        .control-section {
+            margin-bottom: 30px;
+        }
+
+        .control-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .layer-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .layer-toggle:hover {
+            background: #e9ecef;
+        }
+
+        .layer-toggle.active {
+            background: #e3f2fd;
+            border-left: 4px solid #3498db;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 25px;
+            background: #ccc;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: #3498db;
+        }
+
+        .toggle-switch::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 21px;
+            height: 21px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-switch.active::before {
+            transform: translateX(25px);
+        }
+
+        .info-card {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.2);
+        }
+
+        .info-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .info-value {
+            font-size: 1.3rem;
+            color: #3498db;
+            font-weight: 700;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .map-controls {
+            display: flex;
+            gap: 5px;
+        }
+
+        .map-control-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .map-control-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .legend {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .legend h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-good { background: #27ae60; }
+        .status-warning { background: #f39c12; }
+        .status-danger { background: #e74c3c; }
+
+        .current-location {
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid #3498db;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #2c3e50;
+        }
+
+        .coordinates {
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 1024px) {
+            .satellite-dashboard {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .map-container {
+                height: 500px;
+            }
+            
+            .controls-panel {
+                margin-top: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 10px;
+            }
+            
+            .map-container, .controls-panel {
+                margin: 0 10px;
+            }
+            
+            .location-selector {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .location-input {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-satellite"></i> Satellite Monitoring</h1>
+            <p>Real-time crop monitoring and field analysis from space</p>
+        </div>
+
+        <div class="satellite-dashboard">
+            <div class="map-container">
+                <div class="map-header">
+                    <h3><i class="fas fa-map"></i> Field View - Live Satellite Data</h3>
+                    
+                    <div class="location-selector">
+                        <input type="text" class="location-input" id="locationInput" placeholder="Search location (e.g., Mumbai, India)">
+                        <button class="location-btn" onclick="searchLocation()">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <button class="location-btn" onclick="locateUser()">
+                            <i class="fas fa-crosshairs"></i> My Location
+                        </button>
+                    </div>
+
+                    <div class="map-controls">
+                        <button class="map-control-btn" onclick="zoomIn()">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button class="map-control-btn" onclick="zoomOut()">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preset Location Buttons -->
+                <div style="padding: 10px 20px; background: rgba(52, 152, 219, 0.1); border-bottom: 1px solid rgba(52, 152, 219, 0.2);">
+                    <div class="preset-locations">
+                        <button class="preset-btn" onclick="goToLocation(28.6139, 77.2090, 'New Delhi')">New Delhi</button>
+                        <button class="preset-btn" onclick="goToLocation(19.0760, 72.8777, 'Mumbai')">Mumbai</button>
+                        <button class="preset-btn" onclick="goToLocation(13.0827, 80.2707, 'Chennai')">Chennai</button>
+                        <button class="preset-btn" onclick="goToLocation(12.9716, 77.5946, 'Bengaluru')">Bengaluru</button>
+                        <button class="preset-btn" onclick="goToLocation(22.5726, 88.3639, 'Kolkata')">Kolkata</button>
+                        <button class="preset-btn" onclick="goToLocation(23.0225, 72.5714, 'Ahmedabad')">Ahmedabad</button>
+                        <button class="preset-btn" onclick="goToLocation(17.3850, 78.4867, 'Hyderabad')">Hyderabad</button>
+                        <button class="preset-btn" onclick="goToLocation(26.9124, 75.7873, 'Jaipur')">Jaipur</button>
+                    </div>
+                </div>
+
+                <div class="map-content">
+                    <div id="satelliteMap"></div>
+                    <div class="loading-overlay" id="loadingOverlay">
+                        <i class="fas fa-spinner fa-spin"></i> 
+                        <div>Loading satellite data...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls-panel">
+                <!-- Current Location Display -->
+                <div class="current-location" id="currentLocation">
+                    <div><strong>Current Location:</strong> <span id="currentLocationName">Loading...</span></div>
+                    <div class="coordinates" id="currentCoordinates">Lat: -, Lng: -</div>
+                </div>
+
+                <button class="refresh-btn" onclick="refreshData()">
+                    <i class="fas fa-sync-alt"></i> Refresh Data
+                </button>
+
+                <div class="control-section">
+                    <h3><i class="fas fa-layers"></i> Satellite Layers</h3>
+                    
+                    <div class="layer-toggle active" data-layer="satellite">
+                        <span><i class="fas fa-satellite-dish"></i> Satellite Base</span>
+                        <div class="toggle-switch active"></div>
+                    </div>
+                    
+                    <div class="layer-toggle" data-layer="ndvi">
+                        <span><i class="fas fa-leaf"></i> NDVI (Vegetation Health)</span>
+                        <div class="toggle-switch"></div>
+                    </div>
+                    
+                    <div class="layer-toggle" data-layer="moisture">
+                        <span><i class="fas fa-tint"></i> Soil Moisture</span>
+                        <div class="toggle-switch"></div>
+                    </div>
+                    
+                    <div class="layer-toggle" data-layer="temperature">
+                        <span><i class="fas fa-thermometer-half"></i> Temperature Map</span>
+                        <div class="toggle-switch"></div>
+                    </div>
+                    
+                    <div class="layer-toggle" data-layer="classification">
+                        <span><i class="fas fa-seedling"></i> Crop Classification</span>
+                        <div class="toggle-switch"></div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3><i class="fas fa-chart-bar"></i> Field Analytics</h3>
+                    
+                    <div class="info-card">
+                        <div class="info-title">
+                            <span class="status-indicator status-good"></span>Vegetation Health
+                        </div>
+                        <div class="info-value" id="vegetationHealth">Loading...</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="info-title">
+                            <span class="status-indicator status-good"></span>Soil Moisture
+                        </div>
+                        <div class="info-value" id="soilMoisture">Loading...</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="info-title">
+                            <span class="status-indicator status-warning"></span>Temperature
+                        </div>
+                        <div class="info-value" id="temperature">Loading...</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="info-title">Field Area</div>
+                        <div class="info-value" id="fieldArea">Loading...</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="info-title">NDVI Index</div>
+                        <div class="info-value" id="ndviIndex">Loading...</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="info-title">Last Updated</div>
+                        <div class="info-value" id="lastUpdated">Loading...</div>
+                    </div>
+                </div>
+
+                <div class="legend">
+                    <h4>NDVI Legend</h4>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #8B0000;"></div>
+                        <span>Poor Health (0.0-0.2)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FF4500;"></div>
+                        <span>Low Health (0.2-0.4)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FFD700;"></div>
+                        <span>Moderate (0.4-0.6)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #9ACD32;"></div>
+                        <span>Good Health (0.6-0.8)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #006400;"></div>
+                        <span>Excellent (0.8-1.0)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let activeLayers = {};
+        let layerControls = {};
+        let currentMarker = null;
+        let fieldPolygon = null;
+        let currentLocation = { lat: 13.0827, lng: 80.2707, name: 'Chennai, India' };
+
+        // Initialize the satellite monitoring system
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMap();
+            setupLayerControls();
+            setupLocationInput();
+            loadSatelliteData();
+            
+            // Auto-refresh data every 5 minutes
+            setInterval(loadSatelliteData, 300000);
+        });
+
+        function initializeMap() {
+            // Initialize map with default location
+            map = L.map('satelliteMap').setView([currentLocation.lat, currentLocation.lng], 13);
+
+            // Free satellite imagery layer (ESRI World Imagery)
+            const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+                maxZoom: 18,
+                id: 'satellite'
+            });
+
+            // Add default satellite layer
+            satelliteLayer.addTo(map);
+            activeLayers['satellite'] = satelliteLayer;
+
+            // Update current location display
+            updateLocationDisplay(currentLocation.lat, currentLocation.lng, currentLocation.name);
+
+            // Add sample field boundaries
+            addSampleFieldBoundaries(currentLocation.lat, currentLocation.lng);
+
+            // Hide loading overlay
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }, 2000);
+
+            // Add click event to map for selecting new locations
+            map.on('click', function(e) {
+                const lat = e.latlng.lat.toFixed(6);
+                const lng = e.latlng.lng.toFixed(6);
+                
+                // Update location and get address
+                reverseGeocode(lat, lng);
+            });
+        }
+
+        function setupLocationInput() {
+            const locationInput = document.getElementById('locationInput');
+            
+            // Handle Enter key press
+            locationInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchLocation();
+                }
+            });
+        }
+
+        async function searchLocation() {
+            const query = document.getElementById('locationInput').value.trim();
+            if (!query) return;
+
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+
+            try {
+                // Use Nominatim (OpenStreetMap) geocoding service
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+                const data = await response.json();
+
+                if (data && data.length > 0) {
+                    const result = data[0];
+                    const lat = parseFloat(result.lat);
+                    const lng = parseFloat(result.lon);
+                    const locationName = result.display_name;
+
+                    goToLocation(lat, lng, locationName);
+                } else {
+                    alert('Location not found. Please try a different search term.');
+                }
+            } catch (error) {
+                console.error('Geocoding error:', error);
+                alert('Error searching for location. Please try again.');
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        async function reverseGeocode(lat, lng) {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                const data = await response.json();
+                
+                const locationName = data.display_name || `${lat}, ${lng}`;
+                goToLocation(lat, lng, locationName);
+            } catch (error) {
+                console.error('Reverse geocoding error:', error);
+                goToLocation(lat, lng, `${lat}, ${lng}`);
+            }
+        }
+
+        function goToLocation(lat, lng, locationName) {
+            // Update current location
+            currentLocation = { lat: lat, lng: lng, name: locationName };
+            
+            // Move map to new location
+            map.setView([lat, lng], 13);
+            
+            // Update location display
+            updateLocationDisplay(lat, lng, locationName);
+            
+            // Remove old field boundaries and marker
+            if (fieldPolygon) {
+                map.removeLayer(fieldPolygon);
+            }
+            if (currentMarker) {
+                map.removeLayer(currentMarker);
+            }
+            
+            // Add new field boundaries
+            addSampleFieldBoundaries(lat, lng);
+            
+            // Update preset button states
+            updatePresetButtons(locationName);
+            
+            // Refresh satellite data for new location
+            loadSatelliteData();
+        }
+
+        function updateLocationDisplay(lat, lng, locationName) {
+            document.getElementById('currentLocationName').textContent = locationName;
+            document.getElementById('currentCoordinates').textContent = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+        }
+
+        function updatePresetButtons(currentLocationName) {
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (currentLocationName.includes(btn.textContent)) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        function addSampleFieldBoundaries(centerLat, centerLng) {
+            // Create field boundaries around the selected location
+            const offset = 0.01; // Roughly 1km
+            const fieldBoundary = [
+                [centerLat - offset/2, centerLng - offset/2],
+                [centerLat - offset/2, centerLng + offset/2],
+                [centerLat + offset/2, centerLng + offset/2],
+                [centerLat + offset/2, centerLng - offset/2],
+                [centerLat - offset/2, centerLng - offset/2]
+            ];
+
+            fieldPolygon = L.polygon(fieldBoundary, {
+                color: '#3498db',
+                weight: 3,
+                fillColor: '#3498db',
+                fillOpacity: 0.2
+            }).addTo(map);
+
+            fieldPolygon.bindPopup(`
+                <div style="text-align: center;">
+                    <h4>Sample Field</h4>
+                    <p><strong>Location:</strong> ${currentLocation.name}</p>
+                    <p><strong>Area:</strong> 24.7 hectares</p>
+                    <p><strong>Crop:</strong> Rice</p>
+                    <p><strong>Health:</strong> <span style="color: #27ae60;">87% Good</span></p>
+                </div>
+            `);
+
+            // Add center marker
+            currentMarker = L.marker([centerLat, centerLng], {
+                icon: L.divIcon({
+                    html: '<i class="fas fa-map-marker-alt" style="color: #e74c3c; font-size: 20px;"></i>',
+                    iconSize: [20, 20],
+                    className: 'custom-div-icon'
+                })
+            }).addTo(map);
+
+            currentMarker.bindPopup(`
+                <div style="text-align: center;">
+                    <h4>Field Center</h4>
+                    <p><strong>Location:</strong> ${currentLocation.name}</p>
+                    <p><strong>Coordinates:</strong><br>${centerLat.toFixed(6)}, ${centerLng.toFixed(6)}</p>
+                </div>
+            `);
+        }
+
+        function setupLayerControls() {
+            const layerToggles = document.querySelectorAll('.layer-toggle');
+            
+            layerToggles.forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    const layerType = this.dataset.layer;
+                    const toggleSwitch = this.querySelector('.toggle-switch');
+                    const isActive = toggleSwitch.classList.contains('active');
+                    
+                    if (isActive) {
+                        // Deactivate layer
+                        toggleSwitch.classList.remove('active');
+                        this.classList.remove('active');
+                        
+                        if (activeLayers[layerType]) {
+                            map.removeLayer(activeLayers[layerType]);
+                            delete activeLayers[layerType];
+                        }
+                    } else {
+                        // Activate layer
+                        toggleSwitch.classList.add('active');
+                        this.classList.add('active');
+                        
+                        addLayer(layerType);
+                    }
+                });
+            });
+        }
+
+        function addLayer(layerType) {
+            let layer;
+            
+            switch(layerType) {
+                case 'satellite':
+                    layer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                        attribution: '&copy; Esri',
+                        maxZoom: 18
+                    });
+                    break;
+                    
+                case 'ndvi':
+                    // Simulated NDVI layer using color overlay
+                    layer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: 'NDVI Layer (Simulated)',
+                        opacity: 0.6,
+                        filter: 'hue-rotate(90deg) saturate(1.5)'
+                    });
+                    break;
+                    
+                case 'moisture':
+                    // Simulated moisture layer
+                    layer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: 'Soil Moisture (Simulated)',
+                        opacity: 0.5,
+                        filter: 'hue-rotate(200deg) saturate(2)'
+                    });
+                    break;
+                    
+                case 'temperature':
+                    // Simulated temperature layer
+                    layer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: 'Temperature Layer (Simulated)',
+                        opacity: 0.4,
+                        filter: 'hue-rotate(300deg) saturate(3)'
+                    });
+                    break;
+                    
+                case 'classification':
+                    // Simulated crop classification
+                    layer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: 'Crop Classification (Simulated)',
+                        opacity: 0.7,
+                        filter: 'hue-rotate(60deg) saturate(1.2)'
+                    });
+                    break;
+            }
+            
+            if (layer) {
+                layer.addTo(map);
+                activeLayers[layerType] = layer;
+            }
+        }
+
+        async function loadSatelliteData() {
+            try {
+                const response = await fetch('/api/satellite/data');
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    updateDashboard(result.data);
+                }
+            } catch (error) {
+                console.error('Error loading satellite data:', error);
+                // Use fallback data
+                updateDashboard({
+                    vegetation_health: 87.3,
+                    soil_moisture: 65.2,
+                    temperature: 28.5,
+                    area: 24.7,
+                    ndvi_index: 0.742,
+                    last_updated: '2 hours ago'
+                });
+            }
+        }
+
+        function updateDashboard(data) {
+            document.getElementById('vegetationHealth').textContent = `${data.vegetation_health}% Healthy`;
+            document.getElementById('soilMoisture').textContent = `${data.soil_moisture}% Optimal`;
+            document.getElementById('temperature').textContent = `${data.temperature}°C`;
+            document.getElementById('fieldArea').textContent = `${data.area} hectares`;
+            document.getElementById('ndviIndex').textContent = data.ndvi_index;
+            document.getElementById('lastUpdated').textContent = data.last_updated;
+            
+            // Update status indicators based on values
+            updateStatusIndicators(data);
+        }
+
+        function updateStatusIndicators(data) {
+            const indicators = document.querySelectorAll('.status-indicator');
+            
+            // Vegetation health indicator
+            if (data.vegetation_health > 80) {
+                indicators[0].className = 'status-indicator status-good';
+            } else if (data.vegetation_health > 60) {
+                indicators[0].className = 'status-indicator status-warning';
+            } else {
+                indicators[0].className = 'status-indicator status-danger';
+            }
+            
+            // Soil moisture indicator
+            if (data.soil_moisture > 60) {
+                indicators[1].className = 'status-indicator status-good';
+            } else if (data.soil_moisture > 40) {
+                indicators[1].className = 'status-indicator status-warning';
+            } else {
+                indicators[1].className = 'status-indicator status-danger';
+            }
+            
+            // Temperature indicator
+            if (data.temperature > 30) {
+                indicators[2].className = 'status-indicator status-warning';
+            } else if (data.temperature > 35) {
+                indicators[2].className = 'status-indicator status-danger';
+            } else {
+                indicators[2].className = 'status-indicator status-good';
+            }
+        }
+
+        function refreshData() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+            
+            loadSatelliteData().then(() => {
+                setTimeout(() => {
+                    loadingOverlay.style.display = 'none';
+                }, 1000);
+            });
+        }
+
+        function zoomIn() {
+            map.zoomIn();
+        }
+
+        function zoomOut() {
+            map.zoomOut();
+        }
+
+        function locateUser() {
+            if (navigator.geolocation) {
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                loadingOverlay.style.display = 'flex';
+                
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    // Get location name and move to user location
+                    reverseGeocode(lat, lng);
+                    loadingOverlay.style.display = 'none';
+                }, function(error) {
+                    loadingOverlay.style.display = 'none';
+                    alert('Location access denied or failed. Using current location.');
+                });
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
+        }
+    </script>
+</body>
+</html>
